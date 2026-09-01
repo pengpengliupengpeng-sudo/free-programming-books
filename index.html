@@ -2,23 +2,431 @@
 <html lang="zh-CN">
 <head>
   <meta charset="UTF-8">
-  <title>Free Programming Books 在线书库</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/docsify@4/lib/themes/vue.css">
+  <title>中文计算机开源图书在线阅读库</title>
+  <style>
+    :root {
+      --primary: #10b981;
+      --primary-dark: #059669;
+      --bg: #f1f5f9;
+      --sidebar-bg: #ffffff;
+      --text: #0f172a;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+      --card-active: #ecfdf5;
+    }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* 顶部导航 */
+    header {
+      background: #ffffff;
+      border-bottom: 1px solid var(--border);
+      padding: 12px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-shrink: 0;
+    }
+    header h1 {
+      font-size: 18px;
+      color: #0f172a;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .header-info {
+      font-size: 13px;
+      color: var(--text-muted);
+    }
+
+    /* 主布局 */
+    .main-container {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 55px);
+      overflow: hidden;
+    }
+
+    /* 左侧书目与筛选区 */
+    .sidebar {
+      width: 380px;
+      background: var(--sidebar-bg);
+      border-right: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .filter-section {
+      padding: 14px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    .search-input {
+      width: 100%;
+      padding: 10px 14px;
+      font-size: 14px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      outline: none;
+      transition: all 0.2s;
+    }
+    .search-input:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+    }
+    .category-select {
+      width: 100%;
+      padding: 9px 12px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: #f8fafc;
+      color: #334155;
+      outline: none;
+    }
+
+    .book-list {
+      flex: 1;
+      overflow-y: auto;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+    .book-item {
+      padding: 12px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      cursor: pointer;
+      transition: all 0.15s ease;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .book-item:hover {
+      border-color: #a7f3d0;
+      background: #f8fafc;
+    }
+    .book-item.active {
+      background: var(--card-active);
+      border-color: var(--primary);
+    }
+    .book-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .book-item-tag {
+      font-size: 11px;
+      padding: 2px 6px;
+      background: #e2e8f0;
+      color: #475569;
+      border-radius: 4px;
+    }
+    .book-item.active .book-item-tag {
+      background: #10b981;
+      color: #ffffff;
+    }
+    .book-item-title {
+      font-size: 14px;
+      font-weight: 600;
+      line-height: 1.4;
+      color: #1e293b;
+    }
+
+    /* 右侧阅读器展示区 */
+    .reader-area {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      background: #ffffff;
+      position: relative;
+    }
+    .reader-toolbar {
+      padding: 10px 16px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #fafafa;
+    }
+    .current-reading-title {
+      font-size: 15px;
+      font-weight: 600;
+      color: #0f172a;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 60%;
+    }
+    .toolbar-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .action-btn {
+      text-decoration: none;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 500;
+      border-radius: 6px;
+      border: 1px solid var(--border);
+      background: #ffffff;
+      color: #334155;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .action-btn:hover {
+      background: #f1f5f9;
+      color: var(--primary-dark);
+    }
+    .action-btn.primary {
+      background: var(--primary);
+      border-color: var(--primary);
+      color: #ffffff;
+    }
+    .action-btn.primary:hover {
+      background: var(--primary-dark);
+    }
+
+    .reader-frame {
+      flex: 1;
+      width: 100%;
+      height: 100%;
+      border: none;
+    }
+
+    /* 空状态提示 */
+    .empty-state {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      color: var(--text-muted);
+    }
+    .empty-state-icon {
+      font-size: 48px;
+      margin-bottom: 12px;
+    }
+
+    /* 手机端响应式适配 */
+    @media (max-width: 768px) {
+      .main-container {
+        flex-direction: column;
+      }
+      .sidebar {
+        width: 100%;
+        height: 45%;
+      }
+      .reader-area {
+        height: 55%;
+      }
+    }
+  </style>
 </head>
 <body>
-  <div id="app">📚 正在加载开源图书目录...</div>
+  <header>
+    <h1>📚 中文开源计算机图书阅读平台</h1>
+    <div class="header-info" id="statsInfo">正在加载目录...</div>
+  </header>
+
+  <div class="main-container">
+    <!-- 左侧图书列表 -->
+    <div class="sidebar">
+      <div class="filter-section">
+        <input type="text" id="searchInput" class="search-input" placeholder="🔍 快速搜索书名/关键词..." oninput="filterBooks()">
+        <select id="categorySelect" class="category-select" onchange="filterBooks()">
+          <option value="all">全部分类 (全部)</option>
+        </select>
+      </div>
+      <div class="book-list" id="bookList">
+        <div style="text-align: center; padding: 20px; color: #94a3b8; font-size: 13px;">正在解析中文书目...</div>
+      </div>
+    </div>
+
+    <!-- 右侧阅读器 -->
+    <div class="reader-area">
+      <div class="reader-toolbar">
+        <div class="current-reading-title" id="readingTitle">👈 请在左侧选择一本书籍开始阅读</div>
+        <div class="toolbar-actions" id="readerActions" style="display: none;">
+          <a id="externalLink" href="#" target="_blank" rel="noopener noreferrer" class="action-btn">在新窗口全屏打开 ↗</a>
+        </div>
+      </div>
+      <div id="emptyView" class="empty-state">
+        <div class="empty-state-icon">📖</div>
+        <p>在左侧选择你想看的中文图书，即刻在线翻阅</p>
+      </div>
+      <iframe id="bookFrame" class="reader-frame" style="display: none;"></iframe>
+    </div>
+  </div>
+
   <script>
-    window.$docsify = {
-      name: 'Free Programming Books',
-      repo: 'https://github.com/EbookFoundation/free-programming-books',
-      homepage: 'README.md',
-      loadSidebar: false,
-      subMaxLevel: 3,
-      search: 'auto'
+    let allBooks = [];
+    let currentFiltered = [];
+    let activeBook = null;
+
+    const categoryMap = {
+      'Algorithms': '算法与数据结构',
+      'Artificial Intelligence': '人工智能与大模型',
+      'Data Science': '数据科学与分析',
+      'Databases': '数据库系统',
+      'Operating Systems': '操作系统与内核',
+      'Security': '网络安全与逆向',
+      'Software Architecture': '软件架构与分布式',
+      'Web Development': 'Web 前后端开发',
+      'Networking': '网络协议与通信',
+      'Game Development': '游戏引擎与开发',
+      'Miscellaneous': '通识与软件工程'
+    };
+
+    function hasChinese(text) {
+      return /[\u4e00-\u9fa5]/.test(text);
     }
+
+    async function loadMarkdown() {
+      const localPath = 'books/free-programming-books-zh.md';
+      const fallbackPath = 'https://raw.githubusercontent.com/EbookFoundation/free-programming-books/main/books/free-programming-books-zh.md';
+      try {
+        const res = await fetch(localPath);
+        if (res.ok) return await res.text();
+      } catch (e) {}
+      const fallbackRes = await fetch(fallbackPath);
+      return await fallbackRes.text();
+    }
+
+    function parseMarkdown(mdText) {
+      const lines = mdText.split('\n');
+      let currentSection = '通识/其它';
+      const books = [];
+      const categories = new Set();
+
+      for (let line of lines) {
+        line = line.trim();
+        if (line.startsWith('### ')) {
+          let rawCat = line.replace('###', '').trim();
+          currentSection = categoryMap[rawCat] || rawCat;
+        } else if (line.startsWith('## ') && !line.includes('Index') && !line.includes('目录') && !line.includes('License')) {
+          let rawCat = line.replace('##', '').trim();
+          currentSection = categoryMap[rawCat] || rawCat;
+        }
+
+        const match = line.match(/^\*\s*\[(.*?)\]\((.*?)\)(.*)$/);
+        if (match) {
+          const title = match[1].trim();
+          const url = match[2].trim();
+          const extra = match[3] ? match[3].replace(/^[-\s:()]+/, '').replace(/[)]+$/, '').trim() : '';
+
+          if (url.startsWith('http') && (hasChinese(title) || hasChinese(extra) || hasChinese(currentSection))) {
+            const displayTitle = extra ? `${title} · ${extra}` : title;
+            books.push({
+              title: displayTitle,
+              url: url,
+              category: currentSection
+            });
+            categories.add(currentSection);
+          }
+        }
+      }
+      return { books, categories: Array.from(categories) };
+    }
+
+    function populateCategories(cats) {
+      const select = document.getElementById('categorySelect');
+      select.innerHTML = '<option value="all">全部分类 (全部)</option>' +
+        cats.sort((a, b) => a.localeCompare(b, 'zh-CN')).map(cat => {
+          const count = allBooks.filter(b => b.category === cat).length;
+          return `<option value="${cat}">${cat} (${count})</option>`;
+        }).join('');
+    }
+
+    function renderBookList(list) {
+      const listEl = document.getElementById('bookList');
+      if (list.length === 0) {
+        listEl.innerHTML = '<div style="text-align: center; padding: 30px 10px; color: #94a3b8; font-size: 13px;">没有找到匹配的中文书籍</div>';
+        return;
+      }
+
+      listEl.innerHTML = list.map((b, idx) => `
+        <div class="book-item ${activeBook && activeBook.url === b.url ? 'active' : ''}" onclick="selectBook(${idx})">
+          <div class="book-item-header">
+            <span class="book-item-tag">${escapeHtml(b.category)}</span>
+          </div>
+          <div class="book-item-title">${escapeHtml(b.title)}</div>
+        </div>
+      `).join('');
+    }
+
+    function selectBook(idx) {
+      const book = currentFiltered[idx];
+      activeBook = book;
+      renderBookList(currentFiltered);
+
+      // 更新右侧标题与按钮
+      document.getElementById('readingTitle').innerText = `📖 正在阅读：${book.title}`;
+      document.getElementById('externalLink').href = book.url;
+      document.getElementById('readerActions').style.display = 'flex';
+
+      // 加载 iframe 阅读
+      document.getElementById('emptyView').style.display = 'none';
+      const frame = document.getElementById('bookFrame');
+      frame.style.display = 'block';
+      frame.src = book.url;
+    }
+
+    function filterBooks() {
+      const query = document.getElementById('searchInput').value.trim().toLowerCase();
+      const selectedCat = document.getElementById('categorySelect').value;
+
+      currentFiltered = allBooks.filter(b => {
+        const matchCat = (selectedCat === 'all') || (b.category === selectedCat);
+        const matchQuery = !query || b.title.toLowerCase().includes(query) || b.category.toLowerCase().includes(query);
+        return matchCat && matchQuery;
+      });
+
+      renderBookList(currentFiltered);
+      document.getElementById('statsInfo').innerText = `共检索到 ${currentFiltered.length} 本中文书籍`;
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+    }
+
+    async function init() {
+      try {
+        const md = await loadMarkdown();
+        const { books, categories } = parseMarkdown(md);
+        allBooks = books;
+        currentFiltered = books;
+        populateCategories(categories);
+        renderBookList(currentFiltered);
+        document.getElementById('statsInfo').innerText = `已整理 ${allBooks.length} 本中文开源图书`;
+        
+        // 默认自动选第一本打开
+        if (books.length > 0) {
+          selectBook(0);
+        }
+      } catch (e) {
+        document.getElementById('bookList').innerHTML = '<div style="text-align:center; padding: 20px; color:#ef4444;">加载失败，请刷新重试</div>';
+      }
+    }
+
+    init();
   </script>
-  <script src="//cdn.jsdelivr.net/npm/docsify@4/lib/docsify.min.js"></script>
-  <script src="//cdn.jsdelivr.net/npm/docsify/lib/plugins/search.min.js"></script>
 </body>
 </html>
